@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏢 Workspace Builder | Monis.rent
 
-## Getting Started
+An interactive drag-and-drop workspace builder where users can design their dream office setup and rent it. Built as a challenge project for [monis.rent](https://monis.rent) — a company that rents out office equipment to digital nomads and startups in Bali.
 
-First, run the development server:
+Instead of scrolling through a boring product catalog, users can **drag furniture onto a canvas**, arrange it freely, and hit **Rent** when they're happy with their setup.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript)
+
+## ✨ Features
+
+- **Drag & Drop** — Drag items from the sidebar catalog and drop them onto the canvas
+- **Freeform Positioning** — Move items freely anywhere on the canvas
+- **Visual Drag Overlay** — See a preview of the item while dragging
+- **Cart Dropdown** — Review selected items, remove individual items, or reset everything
+- **Fullscreen Canvas** — Maximized workspace area with grid background
+- **Scrollable Sidebar** — Browse through available items without losing canvas space
+- **Boundary Clamping** — Items stay within the canvas boundaries
+
+## 🛠 Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| [Next.js 16](https://nextjs.org) | React framework with App Router |
+| [React 19](https://react.dev) | UI library |
+| [TypeScript 5](https://www.typescriptlang.org) | Type safety |
+| [Tailwind CSS 4](https://tailwindcss.com) | Utility-first styling |
+| [dnd-kit](https://dndkit.com) | Drag and drop toolkit |
+| [Zustand 5](https://zustand.docs.pmnd.rs) | Lightweight state management |
+
+## 📁 Project Structure
+
+```
+app/
+├── components/
+│   ├── Canvas.tsx          # Droppable canvas area
+│   ├── CanvasItem.tsx      # Draggable item on canvas
+│   ├── CartDropdown.tsx    # Cart dropdown with item list
+│   ├── Sidebar.tsx         # Sidebar wrapper with catalog
+│   └── SidebarItem.tsx     # Draggable catalog item card
+├── lib/
+│   ├── types.ts            # Shared type definitions
+│   └── utils.ts            # Utility functions
+├── store/
+│   └── workspaceStore.ts   # Zustand store for workspace state
+├── globals.css
+├── layout.tsx
+└── page.tsx                # Main page with DnD context
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18+
+- npm, yarn, pnpm, or bun
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Clone the repository
+git clone <repo-url>
+cd desent-test
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Install dependencies
+npm install
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run the development server
+npm run dev
+```
 
-## Deploy on Vercel
+Open [http://localhost:3000](http://localhost:3000) to see the workspace builder.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Available Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+
+## 🧩 How It Works
+
+1. **Browse** — Scroll through available items in the left sidebar
+2. **Drag** — Pick up an item and drag it onto the canvas
+3. **Arrange** — Move items freely on the canvas to design your workspace
+4. **Review** — Open the cart dropdown to see your selected items
+5. **Rent** — Hit the "Rent Workspace" button when you're happy
+
+## 🤖 AI-Assisted Development
+
+This project was built with the help of [Claude](https://claude.ai) (by Anthropic) as a coding assistant. Claude helped with architecture decisions, component structure, drag-and-drop implementation, debugging hydration issues, and overall code quality improvements.
+
+## 📄 License
+
+This project is private and built as a challenge submission for Desent / monis.rent.
