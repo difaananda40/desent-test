@@ -1,65 +1,180 @@
+"use client";
+
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
+import { useWorkspaceStore } from "@/app/store/workspaceStore";
+import { ActiveDrag } from "@/app/lib/types";
+import { getEventClientPosition } from "@/app/lib/utils";
+import Sidebar from "@/app/components/Sidebar";
+import CartDropdown from "@/app/components/CartDropdown";
+
+const Canvas = dynamic(() => import("@/app/components/Canvas"), { ssr: false });
+
+function DragOverlayContent({
+  thumbnail,
+  name,
+  width,
+  height,
+}: {
+  thumbnail: string;
+  name: string;
+  width: number;
+  height: number;
+}) {
+  return (
+    <div style={{ width, height }}>
+      <Image
+        src={thumbnail}
+        alt={name}
+        width={width}
+        height={height}
+        className="h-full w-full object-contain"
+      />
+    </div>
+  );
+}
 
 export default function Home() {
+  const catalog = useWorkspaceStore((state) => state.catalog);
+  const items = useWorkspaceStore((state) => state.items);
+  const addItemAt = useWorkspaceStore((state) => state.addItemAt);
+  const moveItem = useWorkspaceStore((state) => state.moveItem);
+
+  const [activeDrag, setActiveDrag] = useState<ActiveDrag>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 4 },
+    }),
+  );
+
+  const activeCatalogItem =
+    activeDrag?.type === "catalog"
+      ? catalog.find((entry) => entry.id === activeDrag.catalogId)
+      : null;
+
+  const activeCanvasItem =
+    activeDrag?.type === "canvas-item"
+      ? items.find((entry) => entry.instanceId === activeDrag.instanceId)
+      : null;
+
+  const activeOverlayItem = activeCatalogItem ?? activeCanvasItem ?? null;
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const data = event.active.data.current as ActiveDrag;
+    setActiveDrag(data);
+
+    const pointerEvent = event.activatorEvent as
+      | MouseEvent
+      | TouchEvent
+      | PointerEvent;
+
+    dragStartRef.current = getEventClientPosition(pointerEvent);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const data = event.active.data.current as ActiveDrag;
+      const overId = event.over?.id;
+
+      if (!data) {
+        setActiveDrag(null);
+        dragStartRef.current = null;
+        return;
+      }
+
+      if (data.type === "catalog" && overId === "canvas-dropzone") {
+        const catalogItem = catalog.find(
+          (entry) => entry.id === data.catalogId,
+        );
+        const rect = canvasRef.current?.getBoundingClientRect();
+        const overlayEl = document.querySelector(
+          "[data-dnd-kit-drag-overlay]",
+        ) as HTMLElement | null;
+
+        if (catalogItem && rect) {
+          let x: number;
+          let y: number;
+
+          if (overlayEl) {
+            const overlayRect = overlayEl.getBoundingClientRect();
+            x = overlayRect.left - rect.left;
+            y = overlayRect.top - rect.top;
+          } else if (dragStartRef.current) {
+            const clientX = dragStartRef.current.x + event.delta.x;
+            const clientY = dragStartRef.current.y + event.delta.y;
+            x = clientX - rect.left - catalogItem.width / 2;
+            y = clientY - rect.top - catalogItem.height / 2;
+          } else {
+            x = 0;
+            y = 0;
+          }
+
+          addItemAt(catalogItem.id, x, y);
+        }
+      }
+
+      if (data.type === "canvas-item") {
+        const nextX = data.originX + event.delta.x;
+        const nextY = data.originY + event.delta.y;
+        moveItem(data.instanceId, nextX, nextY);
+      }
+
+      setActiveDrag(null);
+      dragStartRef.current = null;
+    },
+    [catalog, addItemAt, moveItem],
+  );
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="h-screen w-screen overflow-hidden bg-zinc-50 text-zinc-900">
+        <div className="grid h-full w-full min-h-0 grid-cols-[260px_minmax(0,1fr)] gap-6 px-6 py-6">
+          <Sidebar />
+
+          <main className="flex h-full min-h-0 flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Canvas</h2>
+                <p className="text-sm text-zinc-500">
+                  Bebas geser item di area ini.
+                </p>
+              </div>
+              <CartDropdown />
+            </div>
+
+            <div className="flex-1">
+              <Canvas activeDrag={activeDrag} canvasRef={canvasRef} />
+            </div>
+          </main>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+      <DragOverlay dropAnimation={null} style={{ zIndex: 9999 }}>
+        {activeOverlayItem?.thumbnail ? (
+          <DragOverlayContent
+            thumbnail={activeOverlayItem.thumbnail}
+            name={activeOverlayItem.name}
+            width={activeOverlayItem.width}
+            height={activeOverlayItem.height}
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
